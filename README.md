@@ -1,7 +1,7 @@
 # SofizPay SDK for Dart
 
 <div align="center">
-  <img src="assets/sofizpay-logo.png" alt="SofizPay Logo" width="200" height="200">
+  <img src="https://github.com/kenandarabeh/sofizpay-sdk-dart/blob/main/assets/sofizpay-logo.png?raw=true" alt="SofizPay Logo" width="200" height="200">
   
   <h3>🚀 A powerful Dart SDK for Stellar blockchain DZT token payments</h3>
   
