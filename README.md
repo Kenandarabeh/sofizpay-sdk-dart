@@ -60,7 +60,7 @@ Add SofizPay SDK to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  sofizpay_sdk_dart: ^1.0.5
+  sofizpay_sdk_dart: ^1.0.6
 ```
 
 Then run:
