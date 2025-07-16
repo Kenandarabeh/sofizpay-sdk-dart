@@ -170,7 +170,6 @@ class SofizPaySDK {
     }
   }
 
-  /// Get DZT balance for account
   Future<SofizPayResponse<Map<String, dynamic>>> getDZTBalance(String secretkey) async {
     try {
       if (secretkey.isEmpty) {
@@ -199,7 +198,6 @@ class SofizPaySDK {
     }
   }
 
-  /// Get public key from secret key
   Future<SofizPayResponse<Map<String, dynamic>>> getPublicKey(String secretkey) async {
     try {
       if (secretkey.isEmpty) {
@@ -225,7 +223,6 @@ class SofizPaySDK {
     }
   }
 
-  /// Start transaction stream monitoring
   Future<SofizPayResponse<Map<String, dynamic>>> startTransactionStream(
     String secretkey,
     Function(Map<String, dynamic>) onNewTransaction,
@@ -266,7 +263,6 @@ class SofizPaySDK {
         onNewTransaction(formattedTransaction);
       }
 
-      // Start the stream
       final stream = StellarUtils.setupTransactionStream(publicKey);
       final subscription = stream.listen(transactionHandler);
 
@@ -311,7 +307,6 @@ class SofizPaySDK {
         );
       }
 
-      // Cancel subscription
       final streamInfo = _activeStreams[publicKey];
       final subscription = streamInfo?['subscription'] as StreamSubscription?;
       await subscription?.cancel();
@@ -422,7 +417,6 @@ class SofizPaySDK {
     }
   }
 
-  /// Get transaction by hash
   Future<SofizPayResponse<Map<String, dynamic>>> getTransactionByHash(String transactionHash) async {
     try {
       if (transactionHash.isEmpty) {
