@@ -15,46 +15,38 @@ class StellarUtils {
     final startTime = DateTime.now();
 
     try {
-      if (sourceKey.isEmpty) {
-        throw Exception('Source secret key is required and cannot be empty.');
-      }
-      if (!sourceKey.startsWith('S') || sourceKey.length != 56) {
-        throw Exception('Invalid source secret key format. Secret keys must start with "S" and be 56 characters long.');
-      }
-      if (destinationPublicKey.isEmpty) {
-        throw Exception('Destination public key is required and cannot be empty.');
-      }
-      if (!destinationPublicKey.startsWith('G') || destinationPublicKey.length != 56) {
-        throw Exception('Invalid destination public key format. Public keys must start with "G" and be 56 characters long.');
-      }
-      if (amount <= 0) {
-        throw Exception('Amount must be greater than 0.');
-      }
-      if (amount > 1000000) {
-        throw Exception('Amount is too large. Maximum amount is 1,000,000 DZT.');
-      }
+      // Validate inputs
+      if (sourceKey.isEmpty) throw Exception('Source key is required');
+      if (destinationPublicKey.isEmpty) throw Exception('Destination public key is required');
+      if (amount <= 0) throw Exception('Amount must be greater than 0');
 
+      // Create SDK instance
       final StellarSDK sdk = StellarSDK.PUBLIC;
       
+      // Create key pair from secret key
       final sourceKeyPair = KeyPair.fromSecretSeed(sourceKey);
       final sourcePublicKey = sourceKeyPair.accountId;
       print('Source public key: $sourcePublicKey');
 
-      print('Loading account from Stellar network...');
+      // Load account from Stellar network
       final AccountResponse account = await sdk.accounts.account(sourcePublicKey);
       print('Account loaded, sequence: ${account.sequenceNumber}');
 
+      // Create custom asset
       final Asset asset = Asset.createNonNativeAsset(assetCode, assetIssuer);
 
+      // Build payment operation
       final PaymentOperation paymentOperation = PaymentOperationBuilder(
         destinationPublicKey,
         asset,
         amount.toString(),
       ).build();
 
+      // Build transaction
       final TransactionBuilder transactionBuilder = TransactionBuilder(account)
           .addOperation(paymentOperation);
 
+      // Add memo if provided
       if (memo != null && memo.isNotEmpty) {
         if (memo.length > 28) {
           final truncatedMemo = memo.substring(0, 28);
@@ -69,11 +61,13 @@ class StellarUtils {
       final Transaction transaction = transactionBuilder.build();
       print('Transaction built, signing...');
       
+      // Sign transaction
       transaction.sign(sourceKeyPair, Network.PUBLIC);
       print('Transaction signed');
 
-      print('Submitting transaction to Stellar network...');
+      print('Submitting transaction...');
       
+      // Submit transaction
       final SubmitTransactionResponse result = await sdk.submitTransaction(transaction);
 
       final endTime = DateTime.now();
@@ -91,28 +85,13 @@ class StellarUtils {
         throw Exception('Transaction failed: ${result.resultXdr}');
       }
     } catch (error) {
+      print('Transaction failed: $error');
       final endTime = DateTime.now();
       final duration = endTime.difference(startTime).inMilliseconds / 1000;
-      
-      String friendlyError = error.toString();
-      
-      if (friendlyError.contains('404')) {
-        friendlyError = 'Account not found on Stellar network. Make sure the source account exists and is funded.';
-      } else if (friendlyError.contains('Checksum invalid')) {
-        friendlyError = 'Invalid key format. Please check your secret key or destination public key.';
-      } else if (friendlyError.contains('timeout')) {
-        friendlyError = 'Network timeout. Please check your internet connection and try again.';
-      } else if (friendlyError.contains('insufficient balance')) {
-        friendlyError = 'Insufficient balance. Please make sure you have enough DZT tokens and XLM for fees.';
-      } else if (friendlyError.contains('no_trust')) {
-        friendlyError = 'Destination account does not trust the DZT asset. The recipient needs to add a trustline for DZT token.';
-      }
-      
-      print('Transaction failed: $friendlyError');
 
       return {
         'success': false,
-        'error': friendlyError,
+        'error': error.toString(),
         'duration': duration,
       };
     }
@@ -120,22 +99,13 @@ class StellarUtils {
 
   static Future<double> getDZTBalance(String publicKey) async {
     try {
-      if (publicKey.isEmpty) {
-        throw Exception('Public key is required and cannot be empty.');
-      }
-      
-      if (!publicKey.startsWith('G')) {
-        throw Exception('Invalid public key format. Public keys must start with "G".');
-      }
-      
-      if (publicKey.length != 56) {
-        throw Exception('Invalid public key length. Public keys must be exactly 56 characters long.');
-      }
-      
+      // Create SDK instance
       final StellarSDK sdk = StellarSDK.PUBLIC;
       
+      // Load account from Stellar network
       final AccountResponse account = await sdk.accounts.account(publicKey);
       
+      // Find DZT balance
       for (final Balance balance in account.balances) {
         if (balance.assetType != Asset.TYPE_NATIVE &&
             balance.assetCode == StellarConfig.assetCode &&
@@ -145,14 +115,6 @@ class StellarUtils {
       }
       return 0.0;
     } catch (error) {
-      if (error.toString().contains('404')) {
-        throw Exception('Account not found on Stellar network. Make sure the account exists and is funded.');
-      } else if (error.toString().contains('Checksum invalid')) {
-        throw Exception('Invalid public key format. Please check your public key.');
-      } else if (error.toString().contains('timeout')) {
-        throw Exception('Network timeout. Please check your internet connection and try again.');
-      }
-      
       print('Error fetching DZT balance: $error');
       rethrow;
     }
@@ -160,27 +122,12 @@ class StellarUtils {
 
   static String getPublicKeyFromSecret(String secretKey) {
     try {
-      if (secretKey.isEmpty) {
-        throw Exception('Secret key is required and cannot be empty.');
-      }
+      if (secretKey.isEmpty) throw Exception('Secret key is required.');
       
-      if (!secretKey.startsWith('S')) {
-        throw Exception('Invalid secret key format. Secret keys must start with "S".');
-      }
-      
-      if (secretKey.length != 56) {
-        throw Exception('Invalid secret key length. Secret keys must be exactly 56 characters long.');
-      }
-      
+      // Use the real Stellar SDK to extract public key from secret key
       final keyPair = KeyPair.fromSecretSeed(secretKey);
       return keyPair.accountId;
     } catch (error) {
-      if (error.toString().contains('Checksum invalid')) {
-        throw Exception('Invalid secret key format. Please check your secret key and try again.');
-      } else if (error.toString().contains('Invalid character')) {
-        throw Exception('Secret key contains invalid characters. Only base32 characters are allowed.');
-      }
-      
       print('Error extracting public key from secret: $error');
       rethrow;
     }
@@ -191,14 +138,12 @@ class StellarUtils {
     int limit = 200,
   }) async {
     try {
-      if (!isValidPublicKey(publicKey)) {
-        throw Exception('Invalid public key format. Public keys must start with "G" and be 56 characters long.');
-      }
-      
+      // Create SDK instance
       final StellarSDK sdk = StellarSDK.PUBLIC;
       
       final transactions = <StellarTransaction>[];
       
+      // Get payments for the account
       final Page<OperationResponse> payments = await sdk.payments
           .forAccount(publicKey)
           .order(RequestBuilderOrder.DESC)
@@ -209,10 +154,12 @@ class StellarUtils {
         if (response is PaymentOperationResponse) {
           final PaymentOperationResponse payment = response;
           
+          // Check if it's a DZT payment
           if (payment.assetType != Asset.TYPE_NATIVE &&
               payment.assetCode == StellarConfig.assetCode &&
               payment.assetIssuer == StellarConfig.assetIssuer) {
             
+            // Get transaction details to get memo
             String memoValue = '';
             try {
               final TransactionResponse txResponse = await sdk.transactions.transaction(payment.transactionHash);
@@ -221,8 +168,10 @@ class StellarUtils {
                 if (memo is MemoText) {
                   memoValue = memo.text ?? '';
                 } else {
+                  // For other memo types, extract the value using toString and clean it up
                   String memoStr = memo.toString();
                   if (memoStr.contains('MemoText')) {
+                    // Extract text from MemoText string representation
                     final startIndex = memoStr.indexOf("'") + 1;
                     final endIndex = memoStr.lastIndexOf("'");
                     if (startIndex > 0 && endIndex > startIndex) {
@@ -259,14 +208,6 @@ class StellarUtils {
       
       return transactions;
     } catch (error) {
-      if (error.toString().contains('404')) {
-        throw Exception('Account not found on Stellar network. Make sure the account exists and is funded.');
-      } else if (error.toString().contains('Checksum invalid')) {
-        throw Exception('Invalid public key format. Please check your public key.');
-      } else if (error.toString().contains('timeout')) {
-        throw Exception('Network timeout. Please check your internet connection and try again.');
-      }
-      
       print('Error fetching DZT transactions: $error');
       rethrow;
     }
@@ -280,22 +221,28 @@ class StellarUtils {
     try {
       print('Searching for transaction: $transactionHash');
       
+      // Create SDK instance
       final StellarSDK sdk = StellarSDK.PUBLIC;
       
+      // Get transaction by hash
       final TransactionResponse transaction = await sdk.transactions.transaction(transactionHash);
       
+      // Get operations for this transaction
       final Page<OperationResponse> operations = await sdk.operations.forTransaction(transactionHash).execute();
       
       print('Transaction found: ${transaction.hash}');
       
+      // Extract memo text properly
       String memoText = '';
       if (transaction.memo != null) {
         final memo = transaction.memo;
         if (memo is MemoText) {
           memoText = memo.text ?? '';
         } else {
+          // For other memo types, extract the value using toString and clean it up
           String memoStr = memo.toString();
           if (memoStr.contains('MemoText')) {
+            // Extract text from MemoText string representation
             final startIndex = memoStr.indexOf("'") + 1;
             final endIndex = memoStr.lastIndexOf("'");
             if (startIndex > 0 && endIndex > startIndex) {
@@ -450,56 +397,6 @@ class StellarUtils {
     _processedTransactionIds.clear();
     _isFirstRun = true;
     print('🛑 Transaction stream closed');
-  }
-
-  static Map<String, String> generateTestKeyPair() {
-    try {
-      final keyPair = KeyPair.random();
-      return {
-        'secretKey': keyPair.secretSeed,
-        'publicKey': keyPair.accountId,
-      };
-    } catch (error) {
-      throw Exception('Failed to generate key pair: $error');
-    }
-  }
-
-  static bool isValidSecretKey(String secretKey) {
-    try {
-      if (secretKey.isEmpty) return false;
-      if (!secretKey.startsWith('S')) return false;
-      if (secretKey.length != 56) return false;
-      
-      KeyPair.fromSecretSeed(secretKey);
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
-
-  static bool isValidPublicKey(String publicKey) {
-    try {
-      if (publicKey.isEmpty) return false;
-      if (!publicKey.startsWith('G')) return false;
-      if (publicKey.length != 56) return false;
-      
-      KeyPair.fromAccountId(publicKey);
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
-
-  static Future<bool> accountExists(String publicKey) async {
-    try {
-      if (!isValidPublicKey(publicKey)) return false;
-      
-      final StellarSDK sdk = StellarSDK.PUBLIC;
-      await sdk.accounts.account(publicKey);
-      return true;
-    } catch (error) {
-      return false;
-    }
   }
 }
 

@@ -464,6 +464,81 @@ class SofizPaySDK {
     }
   }
 
+  Future<SofizPayResponse<Map<String, dynamic>>> makeCIBTransaction(Map<String, dynamic> transactionData) async {
+    try {
+      if (!transactionData.containsKey('account') || transactionData['account'] == null || transactionData['account'].toString().isEmpty) {
+        throw Exception('Account is required.');
+      }
+      if (!transactionData.containsKey('amount') || transactionData['amount'] == null || double.tryParse(transactionData['amount'].toString()) == null || double.parse(transactionData['amount'].toString()) <= 0) {
+        throw Exception('Valid amount is required.');
+      }
+      if (!transactionData.containsKey('full_name') || transactionData['full_name'] == null || transactionData['full_name'].toString().isEmpty) {
+        throw Exception('Full name is required.');
+      }
+      if (!transactionData.containsKey('phone') || transactionData['phone'] == null || transactionData['phone'].toString().isEmpty) {
+        throw Exception('Phone number is required.');
+      }
+      if (!transactionData.containsKey('email') || transactionData['email'] == null || transactionData['email'].toString().isEmpty) {
+        throw Exception('Email is required.');
+      }
+
+      const String baseUrl = 'https://www.sofizpay.com/make-cib-transaction/';
+      
+      List<String> queryParams = [];
+      queryParams.add('account=${transactionData['account']}');
+      queryParams.add('amount=${transactionData['amount']}');
+      queryParams.add('full_name=${transactionData['full_name']}');
+      queryParams.add('phone=${transactionData['phone']}');
+      queryParams.add('email=${transactionData['email']}');
+      
+      if (transactionData.containsKey('return_url') && transactionData['return_url'] != null) {
+        queryParams.add('return_url=${transactionData['return_url']}');
+      }
+      if (transactionData.containsKey('memo') && transactionData['memo'] != null) {
+        final safeMemo = Uri.encodeComponent(transactionData['memo'].toString());
+        queryParams.add('memo=$safeMemo');
+      }
+      if (transactionData.containsKey('redirect')) {
+        queryParams.add('redirect=no');
+      }
+
+      final String fullUrl = '$baseUrl?${queryParams.join('&')}';
+      
+      final response = await HttpUtil.fetchWithRetry(fullUrl);
+
+      return SofizPayResponse<Map<String, dynamic>>(
+        success: true,
+        data: {
+          'data': response,
+          'url': fullUrl,
+          'request_data': {
+            'account': transactionData['account'],
+            'amount': transactionData['amount'],
+            'full_name': transactionData['full_name'],
+            'phone': transactionData['phone'],
+            'email': transactionData['email'],
+            'return_url': transactionData['return_url'],
+            'memo': transactionData['memo'],
+            'redirect': 'no',
+          },
+        },
+      );
+    } catch (error) {
+      print('Error making CIB transaction: $error');
+      
+      String errorMessage = error.toString();
+      
+      return SofizPayResponse<Map<String, dynamic>>(
+        success: false,
+        error: errorMessage,
+        data: {
+          'account': transactionData['account'],
+          'amount': transactionData['amount'],
+        },
+      );
+    }
+  }
+
   String getVersion() {
     return version;
   }

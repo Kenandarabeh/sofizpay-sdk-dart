@@ -49,6 +49,7 @@ SofizPay SDK is a powerful Dart library for Stellar blockchain DZT token payment
 - ✅ **Balance Checking**: Real-time DZT balance queries
 - ✅ **Transaction Search**: Find transactions by memo or hash
 - ✅ **Real-time Streams**: Live transaction monitoring with callbacks
+- ✅ **CIB Transactions**: Create CIB bank transactions for deposits
 - ✅ **Error Handling**: Robust error management and reporting
 
 ---
@@ -140,6 +141,19 @@ await sofizPay.startTransactionStream(secretkey, (transaction) {
 });
 ```
 
+### `makeCIBTransaction()` - CIB Transaction
+```dart
+final result = await sofizPay.makeCIBTransaction({
+  'account': 'ACCOUNT_NUMBER',
+  'amount': 100.0,
+  'full_name': 'John Doe',
+  'phone': '+1234567890',
+  'email': 'john@example.com',
+  'memo': 'Payment for order',
+  'return_url': 'https://your-site.com/callback',
+});
+```
+
 ### Other Methods
 - `getPublicKey()` - Extract public key from secret key
 - `searchTransactionsByMemo()` - Search transactions by memo
@@ -218,6 +232,46 @@ class PaymentMonitor {
   }
   
   void dispose() => _sdk.dispose();
+}
+```
+
+### CIB Transaction Example
+```dart
+class CIBPaymentProcessor {
+  final SofizPaySDK _sdk = SofizPaySDK();
+  
+  Future<void> processCIBTransaction({
+    required String account,
+    required double amount,
+    required String fullName,
+    required String phone,
+    required String email,
+    String? memo,
+    String? returnUrl,
+  }) async {
+    try {
+      final result = await _sdk.makeCIBTransaction({
+        'account': account,
+        'amount': amount,
+        'full_name': fullName,
+        'phone': phone,
+        'email': email,
+        'memo': memo ?? 'CIB Transaction',
+        'return_url': returnUrl,
+        'redirect': 'no',
+      });
+      
+      if (result.success) {
+        print('CIB Transaction created successfully');
+        print('URL: ${result.data!['url']}');
+        // Handle successful response
+      } else {
+        print('CIB Transaction failed: ${result.error}');
+      }
+    } catch (error) {
+      print('Error: $error');
+    }
+  }
 }
 ```
 
