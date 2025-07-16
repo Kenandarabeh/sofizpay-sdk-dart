@@ -1,6 +1,6 @@
 name: sofizpay_sdk_dart
 description: A powerful Dart SDK for Stellar blockchain DZT token payments with real-time transaction monitoring and comprehensive payment management.
-version: 1.0.4
+version: 1.0.5
 homepage: https://github.com/kenandarabeh/sofizpay-sdk-dart
 repository: https://github.com/kenandarabeh/sofizpay-sdk-dart
 issue_tracker: https://github.com/kenandarabeh/sofizpay-sdk-dart/issues
