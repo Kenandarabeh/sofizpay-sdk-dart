@@ -35,7 +35,7 @@
 ### API Methods
 - `submit()` - Send payment transactions
 - `getTransactions()` - Retrieve transaction history
-- `getDZTBalance()` - Get DZT token balance
+- `getBalance()` - Get DZT token balance
 - `getPublicKey()` - Extract public key from secret
 - `searchTransactionsByMemo()` - Search transactions by memo
 - `getTransactionByHash()` - Get transaction details by hash
