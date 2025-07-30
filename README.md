@@ -17,7 +17,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  sofizpay_sdk_dart: ^1.1.0
+  sofizpay_sdk_dart: ^1.1.1
 ```
 
 Then run:
@@ -604,4 +604,4 @@ MIT © [SofizPay Team](https://github.com/kenandarabeh)
 
 ---
 
-**Built with ❤️ for Dart & Flutter | Version `1.1.0`**
+**Built with ❤️ for Dart & Flutter | Version `1.1.1`**

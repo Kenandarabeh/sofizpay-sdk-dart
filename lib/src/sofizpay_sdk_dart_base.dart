@@ -37,7 +37,7 @@ class SofizPayTransactionResponse {
 }
 
 class SofizPaySDK {
-  static const String version = '1.1.0';
+  static const String version = '1.1.1';
   
   final Map<String, Map<String, dynamic>> _activeStreams = {};
   final Map<String, Function(StellarTransaction)> _transactionCallbacks = {};
