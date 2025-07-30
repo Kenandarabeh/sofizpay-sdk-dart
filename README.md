@@ -25,7 +25,7 @@ Then run:
 ```bash
 dart pub get
 ```
-
+ 
 ### Basic Usage
 
 ```dart
